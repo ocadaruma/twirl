@@ -19,13 +19,14 @@ object TemplateCompiler {
     codec: Codec,
     useOldParser: Boolean,
     log: Logger): Seq[File] =
-    compile(sourceDirectories, targetDirectory, templateFormats, templateImports, Nil, includeFilter, excludeFilter,
-      codec,  log)
+    compile(sourceDirectories, targetDirectory, templateFormats, None, templateImports, Nil, includeFilter, excludeFilter,
+      codec, log)
 
   def compile(
     sourceDirectories: Seq[File],
     targetDirectory: File,
     templateFormats: Map[String, String],
+    formatFallback: Option[String],
     templateImports: Seq[String],
     constructorAnnotations: Seq[String],
     includeFilter: FileFilter,
@@ -35,7 +36,7 @@ object TemplateCompiler {
 
     try {
       syncGenerated(targetDirectory, codec)
-      val templates = collectTemplates(sourceDirectories, templateFormats, includeFilter, excludeFilter)
+      val templates = collectTemplates(sourceDirectories, templateFormats, formatFallback, includeFilter, excludeFilter)
       for ((template, sourceDirectory, extension, format) <- templates) {
         val imports = formatImports(templateImports, extension)
         TwirlCompiler.compile(template, sourceDirectory, targetDirectory, format, imports, constructorAnnotations,
@@ -53,14 +54,24 @@ object TemplateCompiler {
     generatedFiles(targetDirectory).map(GeneratedSource(_, codec)).foreach(_.sync)
   }
 
-  def collectTemplates(sourceDirectories: Seq[File], templateFormats: Map[String, String], includeFilter: FileFilter, excludeFilter: FileFilter): Seq[(File, File, String, String)] = {
+  def collectTemplates(
+    sourceDirectories: Seq[File],
+    templateFormats: Map[String, String],
+    formatFallback: Option[String],
+    includeFilter: FileFilter,
+    excludeFilter: FileFilter): Seq[(File, File, String, String)] = {
+
     sourceDirectories flatMap { sourceDirectory =>
       (sourceDirectory ** includeFilter).get flatMap { file =>
         val ext = file.name.split('.').last
-        if (!excludeFilter.accept(file) && templateFormats.contains(ext))
-          Some((file, sourceDirectory, ext, templateFormats(ext)))
-        else
+
+        if (!excludeFilter.accept(file)) {
+          templateFormats.get(ext).orElse(formatFallback).map { format =>
+            (file, sourceDirectory, ext, format)
+          }
+        } else {
           None
+        }
       }
     }
   }

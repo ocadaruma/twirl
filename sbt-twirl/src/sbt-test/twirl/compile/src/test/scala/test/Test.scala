@@ -10,4 +10,6 @@ object Test extends App {
   test(a.b.html.c.render("world"), "\nHello, world.\n")
 
   test(html.template.render("42"), "\nAnswer: 42\n")
+
+  test(conf.template.render("42"), "\nConf: 42\n")
 }

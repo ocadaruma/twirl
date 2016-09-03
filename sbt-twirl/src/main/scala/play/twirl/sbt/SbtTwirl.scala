@@ -13,6 +13,7 @@ object Import {
   object TwirlKeys {
     val twirlVersion = SettingKey[String]("twirl-version", "Twirl version used for twirl-api dependency")
     val templateFormats = SettingKey[Map[String, String]]("twirl-template-formats", "Defined twirl template formats")
+    val formatFallback = SettingKey[Option[String]]("twirl-format-fallback", "Defined twirl template format fallback for extension")
     val templateImports = SettingKey[Seq[String]]("twirl-template-imports", "Extra imports for twirl templates")
     val constructorAnnotations = SettingKey[Seq[String]]("twirl-constructor-annotations", "Annotations added to constructors in injectable templates")
     @deprecated("No longer supported", "1.2.0")
@@ -64,6 +65,7 @@ object SbtTwirl extends AutoPlugin {
 
   def defaultSettings: Seq[Setting[_]] = Seq(
     templateFormats := defaultFormats,
+    formatFallback := None,
     templateImports := TwirlCompiler.DefaultImports,
     constructorAnnotations := Nil,
     sourceEncoding := scalacEncoding(scalacOptions.value)
@@ -98,6 +100,7 @@ object SbtTwirl extends AutoPlugin {
       (sourceDirectories in compileTemplates).value,
       (target in compileTemplates).value,
       templateFormats.value,
+      formatFallback.value,
       templateImports.value,
       constructorAnnotations.value,
       (includeFilter in compileTemplates).value,
